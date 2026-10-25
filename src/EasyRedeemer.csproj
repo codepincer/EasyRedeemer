@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      IMPORTANT: this must match the .NET version your ASF runs on.
+      Check it in ArchiSteamFarm.runtimeconfig.json (look for "tfm") inside your ASF folder,
+      then change the value below to match (for example net9.0 or net10.0).
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>EasyRedeemer</AssemblyName>
+    <RootNamespace>EasyRedeemer</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Point HintPath at the ArchiSteamFarm.dll from the SAME ASF release you run.
+      Edit the path below, or build with:  dotnet build -p:AsfDll="/full/path/to/ArchiSteamFarm.dll"
+    -->
+    <Reference Include="ArchiSteamFarm">
+      <HintPath>$(AsfDll)</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Needed only at compile time for the [Export] attribute; ASF already ships the runtime part. -->
+    <PackageReference Include="System.Composition.AttributedModel" Version="9.0.*" IncludeAssets="compile" />
+  </ItemGroup>
+
+</Project>

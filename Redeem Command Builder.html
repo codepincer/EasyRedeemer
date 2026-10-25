@@ -1,0 +1,463 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Redeem Command Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a two-column workbench. Keys go in on the left, ready-to-paste ASF commands come out on the right.
+     On a phone the columns stack. Colors are cool grey-green neutrals with one green accent. */
+  :root {
+    --bg: #eef2f0;
+    --surface: #ffffff;
+    --surface-2: #f5f8f6;
+    --ink: #15201c;
+    --muted: #55655f;
+    --line: #d3dcd8;
+    --accent: #0b7a5c;
+    --accent-ink: #ffffff;
+    --warn: #9a5200;
+    --warn-bg: #fff3df;
+    --bad: #b3261e;
+    --bad-bg: #fdebe9;
+    --ok-bg: #e3f4ed;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1613;
+      --surface: #161f1b;
+      --surface-2: #1c2823;
+      --ink: #e5efea;
+      --muted: #94a69f;
+      --line: #2a3a33;
+      --accent: #3fc79e;
+      --accent-ink: #072018;
+      --warn: #f0b560;
+      --warn-bg: #33250f;
+      --bad: #ff8a80;
+      --bad-bg: #3a1a17;
+      --ok-bg: #153227;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1613;
+    --surface: #161f1b;
+    --surface-2: #1c2823;
+    --ink: #e5efea;
+    --muted: #94a69f;
+    --line: #2a3a33;
+    --accent: #3fc79e;
+    --accent-ink: #072018;
+    --warn: #f0b560;
+    --warn-bg: #33250f;
+    --bad: #ff8a80;
+    --bad-bg: #3a1a17;
+    --ok-bg: #153227;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-block: 28px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  header h1 { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 4px; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .cols { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 820px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+  .panel h2 { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+
+  label, .label { display: block; font-weight: 500; margin-bottom: 4px; }
+  .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 6px; }
+
+  textarea, input[type="text"], input[type="number"] {
+    width: 100%; box-sizing: border-box; background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px;
+    font: 0.88rem/1.5 var(--font-mono);
+  }
+  textarea { min-height: 230px; resize: vertical; }
+  textarea:focus-visible, input:focus-visible, button:focus-visible, .seg input:focus-visible + span {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  .row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface-2); }
+  .seg label { margin: 0; position: relative; }
+  .seg input { position: absolute; opacity: 0; inset: 0; }
+  .seg span { display: block; padding: 7px 14px; font-weight: 500; cursor: pointer; color: var(--muted); }
+  .seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button {
+    font: 500 0.88rem var(--font-body); border-radius: 6px; padding: 7px 13px; cursor: pointer;
+    background: var(--surface-2); color: var(--ink); border: 1px solid var(--line);
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .example-note { font-size: 0.82rem; color: var(--muted); }
+
+  .summary { font-weight: 500; }
+  .summary span + span::before { content: "·"; margin: 0 8px; color: var(--muted); }
+
+  ul.issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ul.issues li { padding: 7px 10px; border-radius: 6px; font-size: 0.86rem; overflow-wrap: anywhere; }
+  ul.issues li.bad { background: var(--bad-bg); color: var(--bad); }
+  ul.issues li.warn { background: var(--warn-bg); color: var(--warn); }
+  ul.issues li.info { background: var(--ok-bg); color: var(--ink); }
+
+  .out { border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); min-width: 0; }
+  .out-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: 0.82rem; color: var(--muted); }
+  .out pre { margin: 0; padding: 10px; font: 0.84rem/1.55 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; user-select: all; }
+
+  .empty { color: var(--muted); padding: 24px 4px; text-align: center; }
+  .small { font-size: 0.82rem; color: var(--muted); margin: 0; }
+  @media (prefers-reduced-motion: no-preference) { button { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Redeem Command Builder</h1>
+    <p>Paste your keys, pick the bots, and copy the commands for the EasyRedeemer plugin. Everything runs in this page. Your keys are not sent anywhere and are not saved.</p>
+  </header>
+
+  <div class="cols">
+    <section class="panel" aria-labelledby="in-h">
+      <h2 id="in-h">Your keys</h2>
+
+      <div>
+        <label for="keys">Keys, one per line</label>
+        <p class="hint">Type an AppID once and it applies to every key after it, until you type a new AppID. The AppID can be on its own line or in front of a key (<code>440 KEY</code>). Keys before any AppID use the default AppID below, or ASF's own matching if that is empty. Lines starting with # are ignored.</p>
+        <textarea id="keys" spellcheck="false" autocomplete="off" aria-describedby="example-note"></textarea>
+        <p class="example-note" id="example-note">The keys shown are made-up examples. Clear them and paste your own.</p>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="bots">Bots</label>
+          <input type="text" id="bots" value="asf" spellcheck="false" autocomplete="off">
+          <p class="hint" style="margin-top:6px">Use <code>asf</code> for all bots, or names like <code>bot1,bot2</code>.</p>
+        </div>
+        <div>
+          <label for="batch">Keys per command</label>
+          <input type="number" id="batch" value="20" min="1" max="200" inputmode="numeric">
+          <p class="hint" style="margin-top:6px">Long lists are split into several commands.</p>
+        </div>
+        <div>
+          <label for="defapp">Default AppID (optional)</label>
+          <input type="text" id="defapp" inputmode="numeric" placeholder="e.g. 440" spellcheck="false" autocomplete="off">
+          <p class="hint" style="margin-top:6px">Used for every line that has only a key.</p>
+        </div>
+      </div>
+
+      <div>
+        <span class="label" id="mode-l">Output</span>
+        <div class="seg" role="radiogroup" aria-labelledby="mode-l">
+          <label><input type="radio" name="mode" value="command" checked><span>Console command</span></label>
+          <label><input type="radio" name="mode" value="file"><span>Keys file</span></label>
+        </div>
+      </div>
+
+      <div id="path-wrap" hidden>
+        <label for="path">Path of the keys file on the ASF machine</label>
+        <input type="text" id="path" value="/home/you/keys.txt" spellcheck="false" autocomplete="off">
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" id="gen">Generate</button>
+        <button type="button" id="clear">Clear keys</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h">
+      <h2 id="out-h">Commands to paste into ASF</h2>
+      <div class="summary" id="summary" aria-live="polite"></div>
+      <ul class="issues" id="issues"></ul>
+      <div id="outputs" style="display:grid;gap:12px"></div>
+      <p class="small" id="howto"></p>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  var EXAMPLE = [
+    "# Example only: an AppID applies to every key after it, until the next AppID",
+    "440 AAAAA-BBBBB-CCCCC",
+    "DDDDD-EEEEE-FFFFF",
+    "EEEEE-FFFFF-GGGGG",
+    "730 GGGGG-HHHHH-IIIII",
+    "JJJJJ-KKKKK-LLLLL",
+    "570",
+    "MMMMM-NNNNN-OOOOO",
+    "PPPPP-QQQQQ-RRRRR"
+  ].join("\n");
+
+  var KEY_RE = /^[A-Za-z0-9]{5}(-[A-Za-z0-9]{5}){2,4}$/;
+  var SEP = /[\s,:;=]+/;
+  var MAX_APPID = 4294967295;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var keysEl = $("keys"), botsEl = $("bots"), batchEl = $("batch"), pathEl = $("path"), defEl = $("defapp");
+  var pathWrap = $("path-wrap"), outputsEl = $("outputs"), issuesEl = $("issues");
+  var summaryEl = $("summary"), howtoEl = $("howto"), noteEl = $("example-note");
+
+  function mode() { return document.querySelector('input[name="mode"]:checked').value; }
+
+  function parse(text, defApp) {
+    var pairs = [], problems = [], dups = [], seen = {}, botLines = [];
+    // A number is an AppID and stays in effect for every key after it, until the next number.
+    // Anything else is a key. Keys before the first AppID use the default AppID, if one is set.
+    var cur = defApp || null;
+    text.split(/\r?\n/).forEach(function (raw, i) {
+      var t = raw.trim();
+      if (!t || t.charAt(0) === "#") return;
+      if (/^bots\s*:/i.test(t)) { botLines.push(i + 1); return; }
+      var junk = [];
+      t.split(SEP).filter(Boolean).forEach(function (tok) {
+        if (/^\d+$/.test(tok)) {
+          if (Number(tok) === 0 || Number(tok) > MAX_APPID) {
+            cur = null;
+            problems.push({ n: i + 1, t: tok, why: "the AppID must be a whole number such as 440, so the keys after it have no AppID." });
+            return;
+          }
+          cur = String(Number(tok));
+          return;
+        }
+        // Lone dashes, dots or bullets are just separators or list markers, so they are ignored without a warning.
+        if (/^[-_.*•–—]+$/.test(tok)) return;
+        // Anything that is not a number (AppID) must at least look like a key, so stray words never reach a command.
+        if (!/^[A-Za-z0-9-]{10,}$/.test(tok)) { junk.push(tok); return; }
+        var id = tok.toUpperCase();
+        if (Object.prototype.hasOwnProperty.call(seen, id)) {
+          dups.push({ n: i + 1, first: seen[id] });
+          return;
+        }
+        seen[id] = i + 1;
+        pairs.push({ app: cur, key: tok, n: i + 1, odd: !KEY_RE.test(tok) });
+      });
+      if (junk.length) problems.push({ n: i + 1, t: junk.join(" "), why: "these words are not an AppID or a key (a key has at least 10 letters, digits or hyphens)." });
+    });
+    return { pairs: pairs, problems: problems, dups: dups, botLines: botLines };
+  }
+
+  function li(cls, text) {
+    var el = document.createElement("li");
+    el.className = cls;
+    el.textContent = text;
+    return el;
+  }
+
+  function copyText(text, pre, btn) {
+    var done = function (msg) {
+      var old = btn.getAttribute("data-label");
+      btn.textContent = msg;
+      setTimeout(function () { btn.textContent = old; }, 1600);
+    };
+    var fallback = function () {
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(pre);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      } catch (e) {}
+      done("Selected: press Ctrl+C");
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done("Copied"); }, fallback);
+      } else {
+        fallback();
+      }
+    } catch (e) {
+      fallback();
+    }
+  }
+
+  var dlApi = null;
+  try {
+    if (window.claude && window.claude.use) {
+      window.claude.use("downloads").then(function (d) { dlApi = d || null; if (dlApi) render(); }, function () {});
+    }
+  } catch (e) {}
+
+  function downloadText(name, text, btn) {
+    var old = btn.textContent;
+    var say = function (m) { btn.textContent = m; setTimeout(function () { btn.textContent = old; }, 1600); };
+    if (!dlApi) {
+      // Page opened as a plain file (not inside Claude): a normal browser download works here.
+      try {
+        var url = URL.createObjectURL(new Blob([text + "\n"], { type: "text/plain;charset=utf-8" }));
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        say("Saved");
+      } catch (e) { say("Not available: use Copy"); }
+      return;
+    }
+    dlApi.save({ filename: name, data: text + "\n" }).then(function () { say("Saved"); }, function (e) {
+      if (e && e.code === "declined") { say(old); } else { say("Not available: use Copy"); }
+    });
+  }
+
+  function addOutput(title, text, downloadName) {
+    var box = document.createElement("div");
+    box.className = "out";
+    var head = document.createElement("div");
+    head.className = "out-head";
+    var t = document.createElement("span");
+    t.textContent = title;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Copy";
+    btn.setAttribute("data-label", "Copy");
+    var pre = document.createElement("pre");
+    pre.textContent = text;
+    btn.addEventListener("click", function () { copyText(text, pre, btn); });
+    head.appendChild(t);
+    var btns = document.createElement("span");
+    btns.style.cssText = "display:inline-flex;gap:8px;flex-wrap:wrap";
+    if (downloadName) {
+      var dl = document.createElement("button");
+      dl.type = "button";
+      dl.textContent = "Download .txt";
+      dl.addEventListener("click", function () { downloadText(downloadName, text, dl); });
+      btns.appendChild(dl);
+    }
+    btns.appendChild(btn);
+    head.appendChild(btns);
+    box.appendChild(head);
+    box.appendChild(pre);
+    outputsEl.appendChild(box);
+  }
+
+  function render() {
+    outputsEl.textContent = "";
+    issuesEl.textContent = "";
+    summaryEl.textContent = "";
+    howtoEl.textContent = "";
+
+    pathWrap.hidden = mode() !== "file";
+
+    var defRaw = defEl.value.trim();
+    var defOk = /^\d+$/.test(defRaw) && Number(defRaw) > 0 && Number(defRaw) <= MAX_APPID;
+    var res = parse(keysEl.value, defOk ? String(Number(defRaw)) : "");
+    var bots = botsEl.value.trim();
+    var size = Math.max(1, Math.min(200, parseInt(batchEl.value, 10) || 20));
+
+    var withApp = res.pairs.filter(function (p) { return p.app; });
+    var keyOnly = res.pairs.filter(function (p) { return !p.app; });
+    var apps = {};
+    withApp.forEach(function (p) { apps[p.app] = (apps[p.app] || 0) + 1; });
+    var appCount = Object.keys(apps).length;
+
+    [
+      res.pairs.length + (res.pairs.length === 1 ? " key" : " keys"),
+      appCount + (appCount === 1 ? " app" : " apps")
+    ].concat(keyOnly.length ? [keyOnly.length + " without AppID"] : []).forEach(function (s) {
+      var sp = document.createElement("span");
+      sp.textContent = s;
+      summaryEl.appendChild(sp);
+    });
+    if (res.dups.length) {
+      var d = document.createElement("span");
+      d.textContent = res.dups.length + " duplicate" + (res.dups.length === 1 ? "" : "s") + " left out";
+      summaryEl.appendChild(d);
+    }
+
+    res.problems.forEach(function (p) {
+      issuesEl.appendChild(li("bad", "Line " + p.n + " was skipped: " + p.why + " (“" + p.t + "”)"));
+    });
+    res.botLines.forEach(function (n) {
+      issuesEl.appendChild(li("info", "Line " + n + " was skipped: \"bots:\" lines are only for key files. Use the Bots field here."));
+    });
+    res.dups.forEach(function (d) {
+      issuesEl.appendChild(li("warn", "Line " + d.n + " repeats the key on line " + d.first + ". It was left out because a key can only be used once."));
+    });
+    var odds = res.pairs.filter(function (p) { return p.odd; });
+    if (odds.length) {
+      var shown = odds.map(function (p) { return p.n; }).join(", ");
+      issuesEl.appendChild(li("warn", odds.length + (odds.length === 1 ? " key does" : " keys do") + " not look like the usual XXXXX-XXXXX-XXXXX format (line" + (odds.length === 1 ? " " : "s ") + shown + "). Still included."));
+    }
+    var multi = Object.keys(apps).filter(function (a) { return apps[a] > 1; });
+    if (multi.length) {
+      issuesEl.appendChild(li("info", "Several keys for one app: " + multi.map(function (a) { return a + " (" + apps[a] + " keys)"; }).join(", ") + ". Each key goes to a different bot that does not own the game yet; leftover keys are not used."));
+    }
+    if (defRaw && !defOk) {
+      issuesEl.appendChild(li("warn", "The default AppID must be a whole number such as 440. It was ignored."));
+    }
+    if (keyOnly.length) {
+      issuesEl.appendChild(li("info", keyOnly.length + (keyOnly.length === 1 ? " key has" : " keys have") + " no AppID, so they use ASF's built-in redeem command. To make ASF pass each key on to a bot that does not own the game yet, set RedeemingPreferences to 3 in your bot configs."));
+    }
+    if (/\s/.test(bots)) {
+      issuesEl.appendChild(li("warn", "The bot list contains a space. Separate bot names with commas only."));
+    }
+
+    if (!res.pairs.length) {
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = "No valid keys yet. Add lines like “440 AAAAA-BBBBB-CCCCC”.";
+      outputsEl.appendChild(e);
+      return;
+    }
+    if (!bots) {
+      outputsEl.appendChild(Object.assign(document.createElement("div"), { className: "empty", textContent: "Enter a bot name, or asf for all bots." }));
+      return;
+    }
+
+    var help = "";
+    if (mode() === "command") {
+      var total = Math.ceil(withApp.length / size);
+      for (var i = 0; i < withApp.length; i += size) {
+        var chunk = withApp.slice(i, i + size);
+        var cmd = "ezr " + bots + " " + chunk.map(function (p) { return p.app + ":" + p.key; }).join(" ");
+        var n = i / size + 1;
+        addOutput(total > 1 ? "With AppID, command " + n + " of " + total + " (" + chunk.length + " keys)" : "With AppID (" + chunk.length + " keys)", cmd);
+      }
+      if (withApp.length) help = "In the ASF console press c, then paste each command and press Enter. Run them one after another, and wait for each to finish.";
+    } else if (withApp.length) {
+      var path = pathEl.value.trim() || "/home/you/keys.txt";
+      var file = withApp.map(function (p) { return p.app + " " + p.key; }).join("\n");
+      addOutput("1. Save this as keys.txt (" + withApp.length + " keys with AppID)", file, "keys.txt");
+      addOutput("2. Then run this in the ASF console", "ezr file " + bots + " " + path);
+      help = "Put the file at the path above on the machine where ASF runs. In the ASF console press c, then paste the command. The batch size setting does not apply to files.";
+    }
+    var kTotal = Math.ceil(keyOnly.length / size);
+    for (var j = 0; j < keyOnly.length; j += size) {
+      var kc = keyOnly.slice(j, j + size);
+      var kcmd = "redeem " + bots + " " + kc.map(function (p) { return p.key; }).join(",");
+      addOutput((kTotal > 1 ? "No AppID, command " + (j / size + 1) + " of " + kTotal : "No AppID") + " (" + kc.length + " keys)", kcmd);
+    }
+    if (keyOnly.length && !help) help = "In the ASF console press c, then paste each command and press Enter. Run them one after another, and wait for each to finish.";
+    howtoEl.textContent = help;
+  }
+
+  keysEl.value = EXAMPLE;
+  keysEl.addEventListener("input", function () { noteEl.hidden = true; render(); });
+  [botsEl, batchEl, pathEl, defEl].forEach(function (el) { el.addEventListener("input", render); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) { r.addEventListener("change", render); });
+  $("gen").addEventListener("click", render);
+  $("clear").addEventListener("click", function () { keysEl.value = ""; noteEl.hidden = true; render(); keysEl.focus(); });
+
+  render();
+})();
+</script>
+
+</body></html>
