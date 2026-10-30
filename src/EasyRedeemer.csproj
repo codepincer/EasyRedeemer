@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Must match the .NET version of the ASF release in the ArchiSteamFarm submodule (ASF 6.3.x runs on .NET 10). -->
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>EasyRedeemer</AssemblyName>
+    <RootNamespace>EasyRedeemer</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Compile-time only: ASF ships these itself at runtime. Versions follow the pinned ASF release. -->
+    <!-- Same package ASF uses. Listed here with compile-only assets so its OpenAPI source generator does not run in this project (it fails without ASP.NET references). -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" IncludeAssets="compile" />
+    <PackageReference Include="SteamKit2" Version="3.4.0" IncludeAssets="compile" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="10.0.12" IncludeAssets="compile" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ASF itself, built from the pinned submodule. Not copied to the output: the ASF you run already has it.
+         TreatWarningsAsErrors=false only stops a newer .NET SDK from failing ASF's own build over new analyzer warnings. -->
+    <ProjectReference Include="..\ArchiSteamFarm\ArchiSteamFarm\ArchiSteamFarm.csproj" ExcludeAssets="all" Private="false" AdditionalProperties="TreatWarningsAsErrors=false" />
+  </ItemGroup>
+
+</Project>
