@@ -6,7 +6,7 @@ Redeems keys on many bots at once, and only tries a key on bots that do **not** 
 
 Download and extract latest release and put it in plugins folder.
 
-## Commands or try **[Command Builder](https://codepincer.github.io/EasyRedeemer/commandbuilder.html)**
+## Commands or try **[Command Builder](https://codepincer.github.io/EasyRedeemer/tools/commandbuilder.html)**
 
 One command, `ezr` (long name: `ezredeem`):
 
